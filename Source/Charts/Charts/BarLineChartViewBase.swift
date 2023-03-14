@@ -93,6 +93,7 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
     internal var _pinchGestureRecognizer: NSUIPinchGestureRecognizer!
     #endif
     internal var _panGestureRecognizer: NSUIPanGestureRecognizer!
+    internal var _longPressGestureRecognizer: UILongPressGestureRecognizer!
     
     /// flag that indicates if a custom viewport offset has been set
     private var _customViewPortEnabled = false
@@ -125,12 +126,15 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
         _doubleTapGestureRecognizer = NSUITapGestureRecognizer(target: self, action: #selector(doubleTapGestureRecognized(_:)))
         _doubleTapGestureRecognizer.nsuiNumberOfTapsRequired = 2
         _panGestureRecognizer = NSUIPanGestureRecognizer(target: self, action: #selector(panGestureRecognized(_:)))
+        _longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressGestureRecognized(_:)))
+        _longPressGestureRecognizer.minimumPressDuration = 0.3
         
         _panGestureRecognizer.delegate = self
         
         self.addGestureRecognizer(_tapGestureRecognizer)
         self.addGestureRecognizer(_doubleTapGestureRecognizer)
         self.addGestureRecognizer(_panGestureRecognizer)
+        self.addGestureRecognizer(_longPressGestureRecognizer)
         
         _doubleTapGestureRecognizer.isEnabled = _doubleTapToZoomEnabled
         _panGestureRecognizer.isEnabled = _dragXEnabled || _dragYEnabled
@@ -531,6 +535,7 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
     
     @objc private func tapGestureRecognized(_ recognizer: NSUITapGestureRecognizer)
     {
+        _longPressGestureRecognizer.isEnabled = false
         if data === nil
         {
             return
@@ -551,12 +556,14 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
             {
                 lastHighlighted = h
                 highlightValue(h, callDelegate: true)
+                _longPressGestureRecognizer.isEnabled = true
             }
         }
     }
     
     @objc private func doubleTapGestureRecognized(_ recognizer: NSUITapGestureRecognizer)
     {
+        _longPressGestureRecognizer.isEnabled = false
         if data === nil
         {
             return
@@ -587,6 +594,7 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
     #if !os(tvOS)
     @objc private func pinchGestureRecognized(_ recognizer: NSUIPinchGestureRecognizer)
     {
+        _longPressGestureRecognizer.isEnabled = false
         if recognizer.state == NSUIGestureRecognizerState.began
         {
             stopDeceleration()
@@ -677,6 +685,7 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
     
     @objc private func panGestureRecognized(_ recognizer: NSUIPanGestureRecognizer)
     {
+        _longPressGestureRecognizer.isEnabled = false
         if recognizer.state == NSUIGestureRecognizerState.began && recognizer.nsuiNumberOfTouches() > 0
         {
             stopDeceleration()
@@ -738,6 +747,7 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
                 _outerScrollView?.nsuiIsScrollEnabled = false
 
             }
+            delegate?.chartViewDidBeginPanning?(self)
         }
         else if recognizer.state == NSUIGestureRecognizerState.changed
         {
@@ -797,6 +807,33 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
             }
 
             delegate?.chartViewDidEndPanning?(self)
+        }
+    }
+    
+    @objc private func longPressGestureRecognized(_ recognizer: UILongPressGestureRecognizer)
+    {
+        if recognizer.state == NSUIGestureRecognizerState.began {
+            print("longPressGestureRecognized begin")
+            _panGestureRecognizer.isEnabled = false
+            let h = getHighlightByTouchPoint(recognizer.location(in: self))
+            let lastHighlighted = self.lastHighlighted
+            if h != lastHighlighted {
+                self.lastHighlighted = h
+                self.highlightValue(h, callDelegate: true)
+            }
+        }
+        else if recognizer.state == NSUIGestureRecognizerState.changed {
+            print("longPressGestureRecognized changed")
+            let h = getHighlightByTouchPoint(recognizer.location(in: self))
+            let lastHighlighted = self.lastHighlighted
+            if h != lastHighlighted {
+                self.lastHighlighted = h
+                self.highlightValue(h, callDelegate: true)
+            }
+        }
+        else if recognizer.state == NSUIGestureRecognizerState.ended || recognizer.state == NSUIGestureRecognizerState.cancelled {
+            print("longPressGestureRecognized ended")
+            _panGestureRecognizer.isEnabled = true
         }
     }
     
