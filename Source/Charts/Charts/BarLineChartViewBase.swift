@@ -813,7 +813,6 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
     @objc private func longPressGestureRecognized(_ recognizer: UILongPressGestureRecognizer)
     {
         if recognizer.state == NSUIGestureRecognizerState.began {
-            print("longPressGestureRecognized begin")
             _panGestureRecognizer.isEnabled = false
             let h = getHighlightByTouchPoint(recognizer.location(in: self))
             let lastHighlighted = self.lastHighlighted
@@ -823,7 +822,6 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
             }
         }
         else if recognizer.state == NSUIGestureRecognizerState.changed {
-            print("longPressGestureRecognized changed")
             let h = getHighlightByTouchPoint(recognizer.location(in: self))
             let lastHighlighted = self.lastHighlighted
             if h != lastHighlighted {
@@ -832,7 +830,6 @@ open class BarLineChartViewBase: ChartViewBase, BarLineScatterCandleBubbleChartD
             }
         }
         else if recognizer.state == NSUIGestureRecognizerState.ended || recognizer.state == NSUIGestureRecognizerState.cancelled {
-            print("longPressGestureRecognized ended")
             _panGestureRecognizer.isEnabled = true
         }
     }
